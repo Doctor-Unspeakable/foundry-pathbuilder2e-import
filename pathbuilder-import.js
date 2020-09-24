@@ -4,14 +4,13 @@ Hooks.on('renderActorSheet', function(obj, html){
   if (element.length != 1) return;
 
   let button = $(`<a class="popout" style><i class="fas fa-book"></i>Import from Pathbuilder 2e</a>`);
-  button.on('click', () => beginPathbuilderImport());
+  button.on('click', () => beginPathbuilderImport(obj.object));
   element.after(button);
   }
    
 );
 
 var applyChanges = false;
-
 var finishedFeats = false;
 var finishedActions = false;
 var finishedClassFeatures = false;
@@ -23,7 +22,7 @@ let allItems=[];
 
 
 
-function beginPathbuilderImport(){
+function beginPathbuilderImport(targetActor){
 
   applyChanges = false;
   finishedFeats = false;
@@ -134,7 +133,7 @@ function beginPathbuilderImport(){
          let deleteAll = html.find('[name="checkBoxDeleteAll"]')[0].checked;
   
          console.log(addFeats);
-         fetchPathbuilderBuild(buildID, addFeats, addEquipment, addMoney, addSpellcasters, deleteAll);
+         fetchPathbuilderBuild(targetActor, buildID, addFeats, addEquipment, addMoney, addSpellcasters, deleteAll);
   
       }
     }
@@ -149,7 +148,7 @@ function isNormalInteger(str) {
     return n !== Infinity && String(n) === str && n >= 0;
 }
 
-function fetchPathbuilderBuild(buildID, addFeats, addEquipment, addMoney, addSpellcasters, deleteAll){
+function fetchPathbuilderBuild(targetActor, buildID, addFeats, addEquipment, addMoney, addSpellcasters, deleteAll){
 
     var xmlhttp = new XMLHttpRequest();
     xmlhttp.onreadystatechange = function() {
@@ -158,7 +157,7 @@ function fetchPathbuilderBuild(buildID, addFeats, addEquipment, addMoney, addSpe
         console.log(jsonBuild);
 
         if (jsonBuild.success){
-          checkCharacterIsCorrect(JSON.parse(jsonBuild.build), addFeats, addEquipment, addMoney, addSpellcasters, deleteAll);
+          checkCharacterIsCorrect(targetActor, JSON.parse(jsonBuild.build), addFeats, addEquipment, addMoney, addSpellcasters, deleteAll);
         } else {
           ui.notifications.warn("Unable to find a character with this build id!");
           return;
@@ -171,7 +170,7 @@ function fetchPathbuilderBuild(buildID, addFeats, addEquipment, addMoney, addSpe
 
 }
 
-function checkCharacterIsCorrect(jsonBuild, addFeats, addEquipment, addMoney, addSpellcasters, deleteAll){
+function checkCharacterIsCorrect(targetActor,jsonBuild, addFeats, addEquipment, addMoney, addSpellcasters, deleteAll){
 
 
   console.log(jsonBuild);
@@ -196,7 +195,7 @@ function checkCharacterIsCorrect(jsonBuild, addFeats, addEquipment, addMoney, ad
     default: "yes",
     close: html => {
       if (correctCharacter) {
-        importCharacter(jsonBuild, addFeats, addEquipment, addMoney, addSpellcasters, deleteAll);
+        importCharacter(targetActor, jsonBuild, addFeats, addEquipment, addMoney, addSpellcasters, deleteAll);
       }
     }
   }).render(true);
@@ -208,19 +207,19 @@ function checkCharacterIsCorrect(jsonBuild, addFeats, addEquipment, addMoney, ad
 
 
 
-async function importCharacter(jsonBuild, addFeats, addEquipment, addMoney, addSpellcasters, deleteAll){
+async function importCharacter(targetActor, jsonBuild, addFeats, addEquipment, addMoney, addSpellcasters, deleteAll){
 
   if (deleteAll){
-    let deletions = actor.data.items.map(i => i._id);
-    let updated = await actor.deleteEmbeddedEntity("OwnedItem", deletions);
+    let deletions = targetActor.data.items.map(i => i._id);
+    let updated = await targetActor.deleteEmbeddedEntity("OwnedItem", deletions);
 
     if (updated){
       console.log("deleted all");
     }
   } else if (addMoney){
-    let items = actor.data.items.filter(i => i.name === "Platinum Pieces" || i.name === "Gold Pieces" || i.name === "Silver Pieces" || i.name === "Copper Pieces");
+    let items = targetActor.data.items.filter(i => i.name === "Platinum Pieces" || i.name === "Gold Pieces" || i.name === "Silver Pieces" || i.name === "Copper Pieces");
     let deletions = items.map(i => i._id);
-    let updated = await actor.deleteEmbeddedEntity("OwnedItem", deletions); // Deletes multiple EmbeddedEntity objects
+    let updated = await targetActor.deleteEmbeddedEntity("OwnedItem", deletions); // Deletes multiple EmbeddedEntity objects
     if (updated){
       console.log("deleted existing coins");
     }
@@ -235,7 +234,7 @@ async function importCharacter(jsonBuild, addFeats, addEquipment, addMoney, addS
   let arrayLores = jsonBuild.lores;
 
 
-  actor.update({
+  targetActor.update({
     'name': jsonBuild.name, 
     'data.details.class.value': jsonBuild.class, 
     'data.details.level.value': jsonBuild.level, 
@@ -314,7 +313,7 @@ async function importCharacter(jsonBuild, addFeats, addEquipment, addMoney, addS
                 var itemName= arrayFeats[ref][0];
                 var itemExtra= arrayFeats[ref][1];
                   
-                if (itemName=== action.data.name && needsNewInstanceofFeat(itemName, itemExtra)){
+                if (itemName=== action.data.name && needsNewInstanceofFeat(targetActor, itemName, itemExtra)){
                   var displayName = itemName;
                   if (itemExtra!=null){
                     displayName +=" ("+itemExtra+")";
@@ -328,7 +327,7 @@ async function importCharacter(jsonBuild, addFeats, addEquipment, addMoney, addS
           }
       }
       finishedFeats=true;
-      checkAllFinishedAndCreate();
+      checkAllFinishedAndCreate(targetActor);
     });
     game.packs.filter(pack =>  pack.metadata.name === 'actionspf2e').forEach(async (pack) => {
       const content = await pack.getContent();
@@ -336,14 +335,14 @@ async function importCharacter(jsonBuild, addFeats, addEquipment, addMoney, addS
         for (var ref in arraySpecials) {
           if (arraySpecials.hasOwnProperty(ref)) {
             var itemName= arraySpecials[ref];
-            if (itemName=== action.data.name && needsNewInstanceofItem(itemName)){
+            if (itemName=== action.data.name && needsNewInstanceofItem(targetActor, itemName)){
                 allItems.push(action.data);
             }
           }
         }
       }
       finishedActions = true;
-      checkAllFinishedAndCreate();
+      checkAllFinishedAndCreate(targetActor);
     });
     game.packs.filter(pack =>  pack.metadata.name === 'ancestryfeatures').forEach(async (pack) => {
       const content = await pack.getContent();
@@ -351,14 +350,14 @@ async function importCharacter(jsonBuild, addFeats, addEquipment, addMoney, addS
         for (var ref in arraySpecials) {
           if (arraySpecials.hasOwnProperty(ref)) {
             var itemName= arraySpecials[ref];
-            if (itemName=== action.data.name && needsNewInstanceofItem(itemName)){
+            if (itemName=== action.data.name && needsNewInstanceofItem(targetActor, itemName)){
                 allItems.push(action.data);
             }
           }
         }
       }
       finishedAncestryFeatures = true;
-      checkAllFinishedAndCreate();
+      checkAllFinishedAndCreate(targetActor);
     });
     game.packs.filter(pack =>  pack.metadata.name === 'classfeatures').forEach(async (pack) => {
       const content = await pack.getContent();
@@ -366,21 +365,21 @@ async function importCharacter(jsonBuild, addFeats, addEquipment, addMoney, addS
         for (var ref in arraySpecials) {
           if (arraySpecials.hasOwnProperty(ref)) {
             var itemName= arraySpecials[ref];
-            if (itemName=== action.data.name && needsNewInstanceofItem(itemName)){
+            if (itemName=== action.data.name && needsNewInstanceofItem(targetActor, itemName)){
                 allItems.push(action.data);
             }
           }
         }
       }
       finishedClassFeatures = true;
-      checkAllFinishedAndCreate();
+      checkAllFinishedAndCreate(targetActor);
     });
   }else {
     finishedFeats=true;
     finishedAncestryFeatures=true;
     finishedActions=true;
     finishedClassFeatures=true;
-    checkAllFinishedAndCreate();
+    checkAllFinishedAndCreate(targetActor);
   }
 
 
@@ -391,7 +390,7 @@ async function importCharacter(jsonBuild, addFeats, addEquipment, addMoney, addS
           for (var equipmentDetails in arrayEquipment) {
               if (arrayEquipment.hasOwnProperty(equipmentDetails)) {
                 var itemName= arrayEquipment[equipmentDetails][0];
-                if (itemName=== action.data.name && needsNewInstanceofItem(itemName)){
+                if (itemName=== action.data.name && needsNewInstanceofItem(targetActor, itemName)){
                   var itemAmount= arrayEquipment[equipmentDetails][1];
 
                   const clonedData = JSON.parse(JSON.stringify(action.data));
@@ -406,7 +405,7 @@ async function importCharacter(jsonBuild, addFeats, addEquipment, addMoney, addS
             if (arrayWeapons.hasOwnProperty(ref)) {
 
               var weaponDetails = arrayWeapons[ref];
-              if (weaponDetails.name=== action.data.name && needsNewInstanceofItem(weaponDetails.name)){
+              if (weaponDetails.name=== action.data.name && needsNewInstanceofItem(targetActor, weaponDetails.name)){
 
                 const clonedData = JSON.parse(JSON.stringify(action.data));
 
@@ -441,7 +440,7 @@ async function importCharacter(jsonBuild, addFeats, addEquipment, addMoney, addS
             if (arrayArmor.hasOwnProperty(ref)) {
 
               var armorDetails = arrayArmor[ref];
-              if (armorDetails.name=== action.data.name && needsNewInstanceofItem(armorDetails.name)){
+              if (armorDetails.name=== action.data.name && needsNewInstanceofItem(targetActor, armorDetails.name)){
 
                 const clonedData = JSON.parse(JSON.stringify(action.data));
 
@@ -494,30 +493,30 @@ async function importCharacter(jsonBuild, addFeats, addEquipment, addMoney, addS
           }
       }
       finishedEquipment=true;
-      checkAllFinishedAndCreate();
+      checkAllFinishedAndCreate(targetActor);
     });
   } else {
     finishedEquipment=true;
-    checkAllFinishedAndCreate();
+    checkAllFinishedAndCreate(targetActor);
   }
 
   if (addSpellcasters){
-    setSpellcasters(jsonBuild.spellCasters, deleteAll);
+    setSpellcasters(targetActor, jsonBuild.spellCasters, deleteAll);
   } else {
     finishedSpells=true;
-    checkAllFinishedAndCreate();
+    checkAllFinishedAndCreate(targetActor);
   }
 
-  addLores(arrayLores);
+  addLores(targetActor, arrayLores);
  
 
 }
 
 
-function checkAllFinishedAndCreate(){
+function checkAllFinishedAndCreate(targetActor){
 
   if (finishedFeats && finishedEquipment && finishedSpells && finishedActions && finishedAncestryFeatures && finishedClassFeatures){
-    actor.createOwnedItem(allItems);
+    targetActor.createOwnedItem(allItems);
   }
 }
 
@@ -574,20 +573,20 @@ function equipmentIsRequired(item, arrayEquipment, arrayWeapons, arrayArmor, add
 }
 
 
-function needsNewInstanceofFeat(itemName, itemExtra){
-  for (var ref in actor.data.items) {
-     if (actor.data.items.hasOwnProperty(ref)) {
+function needsNewInstanceofFeat(targetActor, itemName, itemExtra){
+  for (var ref in targetActor.data.items) {
+     if (targetActor.data.items.hasOwnProperty(ref)) {
              var displayName = itemName;
              if (itemExtra!=null)displayName +=" ("+itemExtra+")";
-             if (actor.data.items[ref].name===displayName)return false;
+             if (targetActor.data.items[ref].name===displayName)return false;
      }         
   }
   return true;
 }
-function needsNewInstanceofItem(itemName){
-  for (var ref in actor.data.items) {
-    if (actor.data.items.hasOwnProperty(ref)) {
-            if (actor.data.items[ref].name===itemName)return false;
+function needsNewInstanceofItem(targetActor, itemName){
+  for (var ref in targetActor.data.items) {
+    if (targetActor.data.items.hasOwnProperty(ref)) {
+            if (targetActor.data.items[ref].name===itemName)return false;
     }         
  }
  return true;
@@ -612,14 +611,14 @@ function getSizeValue(size){
 
 /// spells
 
-async function setSpellcasters(arraySpellcasters, deleteAll){
+async function setSpellcasters(targetActor, arraySpellcasters, deleteAll){
 
 
   // delete existing spellcasters and spells if not already deleted
   if (!deleteAll){
-    let items = actor.data.items.filter(i => i.type === "spellcastingEntry" || i.type === "spell");
+    let items = targetActor.data.items.filter(i => i.type === "spellcastingEntry" || i.type === "spell");
     let deletions = items.map(i => i._id);
-    let updated = await actor.deleteEmbeddedEntity("OwnedItem", deletions); // Deletes multiple EmbeddedEntity objects
+    let updated = await targetActor.deleteEmbeddedEntity("OwnedItem", deletions); // Deletes multiple EmbeddedEntity objects
 
 
     if (updated){
@@ -632,7 +631,7 @@ async function setSpellcasters(arraySpellcasters, deleteAll){
     for (var ref in arraySpellcasters) {
         if (arraySpellcasters.hasOwnProperty(ref)) {
           let spellCaster = arraySpellcasters[ref];
-          spellCaster.instance = await addSpecificCasterAndSpells(spellCaster, spellCaster.magicTradition, spellCaster.spellcastingType);
+          spellCaster.instance = await addSpecificCasterAndSpells(targetActor, spellCaster, spellCaster.magicTradition, spellCaster.spellcastingType);
           requiredSpells = requiredSpells.concat(spellCaster.spells);
         }
     }
@@ -649,7 +648,7 @@ async function setSpellcasters(arraySpellcasters, deleteAll){
        });
     }
     finishedSpells=true;
-    checkAllFinishedAndCreate();
+    checkAllFinishedAndCreate(targetActor);
   });
 
 }
@@ -659,7 +658,7 @@ function spellIsRequired(item, arraySpells){
   return arraySpells.includes(item.name);
 }
 
-async function addSpecificCasterAndSpells(spellCaster, magicTradition, spellcastingType){
+async function addSpecificCasterAndSpells(targetActor, spellCaster, magicTradition, spellcastingType){
 
   const spellcastingEntity = {
     ability: {
@@ -757,18 +756,18 @@ async function addSpecificCasterAndSpells(spellCaster, magicTradition, spellcast
     data: spellcastingEntity
   };
 
-  let spellCasterInstance = await actor.createEmbeddedEntity('OwnedItem', data);
+  let spellCasterInstance = await targetActor.createEmbeddedEntity('OwnedItem', data);
   return spellCasterInstance;
 }
 
-async function addLores(arrayLores){
+async function addLores(targetActor, arrayLores){
 
   for (var ref in arrayLores) {
     if (arrayLores.hasOwnProperty(ref)) {
         let loreName = arrayLores[ref][0];
         let loreProf = arrayLores[ref][1];
 
-        if (needsNewInstanceOfLore(loreName)){
+        if (needsNewInstanceOfLore(targetActor, loreName)){
           console.log(loreName + " prof "+loreProf);
 
           const loreData = {
@@ -792,16 +791,16 @@ async function addLores(arrayLores){
           };
   
 
-          actor.createEmbeddedEntity('OwnedItem', data);
+          targetActor.createEmbeddedEntity('OwnedItem', data);
 
 
         } else {
 
-          for (var ref in actor.data.items) {
-            if (actor.data.items.hasOwnProperty(ref)) {
-                if (actor.data.items[ref].name===loreName){
-                  const update = {_id: actor.data.items[ref]._id, 'data.proficient.value': loreProf/2};
-                  actor.updateEmbeddedEntity("OwnedItem", update); // Updates one EmbeddedEntity
+          for (var ref in targetActor.data.items) {
+            if (targetActor.data.items.hasOwnProperty(ref)) {
+                if (targetActor.data.items[ref].name===loreName){
+                  const update = {_id: targetActor.data.items[ref]._id, 'data.proficient.value': loreProf/2};
+                  targetActor.updateEmbeddedEntity("OwnedItem", update); // Updates one EmbeddedEntity
                 }
             }         
           }
@@ -814,10 +813,10 @@ async function addLores(arrayLores){
   }
 }
 
-function needsNewInstanceOfLore(loreName){
-  for (var ref in actor.data.items) {
-    if (actor.data.items.hasOwnProperty(ref)) {
-            if (actor.data.items[ref].name===loreName)return false;
+function needsNewInstanceOfLore(targetActor, loreName){
+  for (var ref in targetActor.data.items) {
+    if (targetActor.data.items.hasOwnProperty(ref)) {
+            if (targetActor.data.items[ref].name===loreName)return false;
     }         
   }
   return true;
