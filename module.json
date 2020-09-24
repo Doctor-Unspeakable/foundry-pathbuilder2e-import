@@ -5,7 +5,12 @@
   "author": "Redrazors",
   "version": "0.0.1",
   "minimumCoreVersion": "0.5.0",
-  "esmodules": [ 
-        "pathbuilder-import.js"
-    ]
+  "scripts": [ 
+        "./pathbuilder-import.js"
+    ],
+  "styles": [],
+	"packs": [],
+  "url": "https://github.com/Pingar5/alwaysshownotes",
+  "manifest": "https://raw.githubusercontent.com/Doctor-Unspeakable/foundry-pathbuilder2e-import/master/module.json",
+  "download": "https://github.com/Doctor-Unspeakable/foundry-pathbuilder2e-import/archive/1.zip"
 }
