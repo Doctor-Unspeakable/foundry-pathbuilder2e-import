@@ -1,0 +1,19 @@
+{
+  "name": "pathbuilder2e-import",
+  "title": "Pathbuilder 2e Import",
+  "description": "This module adds a button to the top of player character sheets allowing them to quickly import their character from Pathbuilder 2e.",
+  "author": "Redrazors",
+  "version": "0.0.1",
+  "scripts": [
+  "script.js"
+  ],
+  "languages":
+    [{
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }],
+  "system": "Pathfinder 2e",
+  "minimumCoreVersion": "0.6.5",
+  "url": "https://github.com/Doctor-Unspeakable/foundry-pathbuilder2e-import"
+}
