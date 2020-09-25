@@ -98,6 +98,8 @@ function beginPathbuilderImport(targetActor){
   
           #divCode{  
             border: 1px solid black;
+            width: 300px;
+            margin: 0 auto;
             padding: 5px;
           }
           #checkBoxMoney{  
