@@ -3,7 +3,7 @@
   "title": "Pathbuilder 2e Import",
   "description": "This module adds a button to the top of player character sheets allowing them to quickly import their character from Pathbuilder 2e.",
   "author": "Redrazors",
-  "version": "0.0.2",
+  "version": "0.0.5",
   "minimumCoreVersion": "0.5.0",
   "compatibleCoreVersion": "0.7.1",
   "scripts": [ 
