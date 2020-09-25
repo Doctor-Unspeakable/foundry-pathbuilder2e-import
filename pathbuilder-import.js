@@ -1,4 +1,6 @@
-// this code a single page as I've been testing it in macros.
+// ok I know this code is a mess.  
+// My javascript skills are poor (especially with regard to lambda functions and async functionality) and it's a chimera of copied macros and snippets.
+// its a single page as I've been testing it in macros.
 // it works though.  That's got to count for something?
 
 Hooks.on('renderActorSheet', function(obj, html){
@@ -302,7 +304,7 @@ async function importCharacter(targetActor, jsonBuild, addFeats, addEquipment, a
 
   });
 
-
+//  'data.attributes.levelbonushp': jsonBuild.attributes.bonushpPerLevel, not adding this as foundry seems to be including these values automatically
   
   
 
