@@ -350,6 +350,46 @@ async function importCharacter(targetActor, jsonBuild, addFeats, addEquipment, a
         arrayKit.push(["Waterskin", 1]);
     }
 
+    // specific proficiencies
+    let specificTrained = jsonBuild.specificProficiencies.trained;
+    let specificExpert = jsonBuild.specificProficiencies.expert;
+    let specificMaster = jsonBuild.specificProficiencies.master;
+    let specificLegendary = jsonBuild.specificProficiencies.legendary;
+
+    let specificTrainedInstance =[];
+    let specificExpertInstance =[];
+    let specificMasterInstance =[];
+    let specificLegendaryInstance =[];
+    if (specificTrained.length>0 && needsNewInstanceofItem(targetActor, 'Specific Trained' )){
+      specificTrainedInstance = await targetActor.createEmbeddedEntity('OwnedItem', {
+        name: 'Specific Trained',
+        type: 'martial',
+        data: { proficient: { value: 1 }}
+      });
+    }
+    if (specificExpert.length>0 && needsNewInstanceofItem(targetActor, 'Specific Expert' )){
+      specificExpertInstance = await targetActor.createEmbeddedEntity('OwnedItem', {
+        name: 'Specific Expert',
+        type: 'martial',
+        data: { proficient: { value: 2 }}
+      });
+    }
+    if (specificMaster.length>0 && needsNewInstanceofItem(targetActor, 'Specific Master' )){
+      specificMasterInstance = await targetActor.createEmbeddedEntity('OwnedItem', {
+        name: 'Specific Master',
+        type: 'martial',
+        data: { proficient: { value: 3 }}
+      });
+    }
+    if (specificLegendary.length>0 && needsNewInstanceofItem(targetActor, 'Specific Legendary' )){
+      specificLegendaryInstance = await targetActor.createEmbeddedEntity('OwnedItem', {
+        name: 'Specific Legendary',
+        type: 'martial',
+        data: { proficient: { value: 4 }}
+      });
+    }
+
+
     for (const action of content.filter(item => equipmentIsRequired(item, arrayEquipment, arrayWeapons, arrayArmor, arrayKit, addMoney))) {
       for (var equipmentDetails in arrayEquipment) {
           if (arrayEquipment.hasOwnProperty(equipmentDetails)) {
@@ -391,7 +431,18 @@ async function importCharacter(targetActor, jsonBuild, addFeats, addEquipment, a
             const clonedData = JSON.parse(JSON.stringify(action.data));
 
             clonedData.data.quantity.value = weaponDetails.qty;
-            clonedData.data.weaponType.value = weaponDetails.prof;
+            if (specificTrained.includes(weaponDetails.name)){
+              clonedData.data.weaponType.value = specificTrainedInstance._id;
+            } else if (specificExpert.includes(weaponDetails.name)){
+              clonedData.data.weaponType.value = specificExpertInstance._id;
+            } else if (specificMaster.includes(weaponDetails.name)){
+              clonedData.data.weaponType.value = specificMasterInstance._id;
+            } else if (specificLegendary.includes(weaponDetails.name)){
+              clonedData.data.weaponType.value = specificLegendaryInstance._id;
+            } else {
+              clonedData.data.weaponType.value = weaponDetails.prof;
+            }
+            
             clonedData.data.damage.die = weaponDetails.die;
             clonedData.data.potencyRune.value = weaponDetails.pot.toString();
             clonedData.data.strikingRune.value = weaponDetails.str;
