@@ -1,7 +1,4 @@
-// ok I know this code is a mess.  
-// My javascript skills are poor (especially with regard to lambda functions and async functionality) and it's a chimera of copied macros and snippets.
 // its a single page as I've been testing it in macros.
-// it works though.  That's got to count for something?
 
 Hooks.on('renderActorSheet', function(obj, html){
 
@@ -124,7 +121,6 @@ function beginPathbuilderImport(targetActor){
       if (applyChanges) {
          
          let buildID= html.find('[id="textBoxBuildID"]')[0].value;
-         console.log(buildID);
          if (!isNormalInteger(buildID)){
              ui.notifications.warn("Build ID must be a positive integer!");
              return;
@@ -139,7 +135,6 @@ function beginPathbuilderImport(targetActor){
   
          let deleteAll = html.find('[name="checkBoxDeleteAll"]')[0].checked;
   
-         console.log(addFeats);
          fetchPathbuilderBuild(targetActor, buildID, addFeats, addEquipment, addMoney, addSpellcasters, deleteAll);
   
       }
@@ -161,7 +156,7 @@ function fetchPathbuilderBuild(targetActor, buildID, addFeats, addEquipment, add
     xmlhttp.onreadystatechange = function() {
       if (this.readyState == 4 && this.status == 200) {
         var jsonBuild = JSON.parse(this.responseText);
-        console.log(jsonBuild);
+        //console.log(jsonBuild);
 
         if (jsonBuild.success){
           checkCharacterIsCorrect(targetActor, jsonBuild.build, addFeats, addEquipment, addMoney, addSpellcasters, deleteAll);
@@ -178,9 +173,6 @@ function fetchPathbuilderBuild(targetActor, buildID, addFeats, addEquipment, add
 }
 
 function checkCharacterIsCorrect(targetActor,jsonBuild, addFeats, addEquipment, addMoney, addSpellcasters, deleteAll){
-
-
-  console.log(jsonBuild);
 
   let correctCharacter = false;
   new Dialog({
@@ -220,19 +212,18 @@ async function importCharacter(targetActor, jsonBuild, addFeats, addEquipment, a
     let deletions = targetActor.data.items.map(i => i._id);
     let updated = await targetActor.deleteEmbeddedEntity("OwnedItem", deletions);
 
-    if (updated){
-      console.log("deleted all");
-    }
+    // if (updated){
+    //   console.log("deleted all");
+    // }
   } else if (addMoney){
     let items = targetActor.data.items.filter(i => i.name === "Platinum Pieces" || i.name === "Gold Pieces" || i.name === "Silver Pieces" || i.name === "Copper Pieces");
     let deletions = items.map(i => i._id);
     let updated = await targetActor.deleteEmbeddedEntity("OwnedItem", deletions); 
-    if (updated){
-      console.log("deleted existing coins");
-    }
+    // if (updated){
+    //   console.log("deleted existing coins");
+    // }
   }
 
-  console.log("importing character");
   let arrayFeats = jsonBuild.feats;
   let arrayEquipment = jsonBuild.equipment;
   let arrayWeapons = jsonBuild.weapons;
@@ -300,7 +291,8 @@ async function importCharacter(targetActor, jsonBuild, addFeats, addEquipment, a
     'data.skills.sur.rank' : jsonBuild.proficiencies.survival/2,
     'data.skills.thi.rank' : jsonBuild.proficiencies.thievery/2,
 
-    'data.attributes.perception.rank': jsonBuild.proficiencies.perception/2
+    'data.attributes.perception.rank': jsonBuild.proficiencies.perception/2,
+    'data.attributes.classDC.rank': jsonBuild.proficiencies.classDC/2
 
   });
 
@@ -742,9 +734,6 @@ async function setSpellcasters(targetActor, arraySpellcasters, deleteAll){
     let updated = await targetActor.deleteEmbeddedEntity("OwnedItem", deletions); // Deletes multiple EmbeddedEntity objects
 
 
-    if (updated){
-      console.log("deleted spellcasters")
-    }
   }
   
    // make array of spellcaster instances. put 
@@ -753,7 +742,16 @@ async function setSpellcasters(targetActor, arraySpellcasters, deleteAll){
         if (arraySpellcasters.hasOwnProperty(ref)) {
           let spellCaster = arraySpellcasters[ref];
           spellCaster.instance = await addSpecificCasterAndSpells(targetActor, spellCaster, spellCaster.magicTradition, spellCaster.spellcastingType);
-          requiredSpells = requiredSpells.concat(spellCaster.spells);
+          // spellCaster.spells.forEach(spellLevelObject=>{
+          //   console.log(spellLevelObject);
+          // });
+          for (var ref in spellCaster.spells) {
+            if (spellCaster.spells.hasOwnProperty(ref)) {
+              let spellListObject = spellCaster.spells[ref];
+              requiredSpells = requiredSpells.concat(spellListObject.list);
+            }
+          }
+          
         }
     }
 
@@ -761,10 +759,19 @@ async function setSpellcasters(targetActor, arraySpellcasters, deleteAll){
     const content = await pack.getContent();
     for (const action of content.filter(item => spellIsRequired(item, requiredSpells))) {
       arraySpellcasters.forEach(spellCaster => {
-        if (spellCaster.spells.includes(action.data.name)){
-          const clonedData = JSON.parse(JSON.stringify(action.data));
-          clonedData.data.location.value = spellCaster.instance._id;
-          allItems.push(clonedData);
+
+        for (var ref in spellCaster.spells) {
+          if (spellCaster.spells.hasOwnProperty(ref)) {
+
+            let spellListObject = spellCaster.spells[ref];
+
+            if (spellListObject.list.includes(action.data.name)){
+              const clonedData = JSON.parse(JSON.stringify(action.data));
+              clonedData.data.location.value = spellCaster.instance._id;
+              clonedData.data.level.value = spellListObject.spellLevel;
+              allItems.push(clonedData);
+            }
+          }         
         }
        });
     }
@@ -889,7 +896,6 @@ async function addLores(targetActor, arrayLores){
         let loreProf = arrayLores[ref][1];
 
         if (needsNewInstanceOfLore(targetActor, loreName)){
-          console.log(loreName + " prof "+loreProf);
 
           const loreData = {
             proficient: {
