@@ -156,7 +156,7 @@ function fetchPathbuilderBuild(targetActor, buildID, addFeats, addEquipment, add
     xmlhttp.onreadystatechange = function() {
       if (this.readyState == 4 && this.status == 200) {
         var jsonBuild = JSON.parse(this.responseText);
-        //console.log(jsonBuild);
+        console.log(jsonBuild);
 
         if (jsonBuild.success){
           checkCharacterIsCorrect(targetActor, jsonBuild.build, addFeats, addEquipment, addMoney, addSpellcasters, deleteAll);
