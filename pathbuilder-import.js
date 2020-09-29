@@ -274,7 +274,7 @@ async function importCharacter(targetActor, jsonBuild, addFeats, addEquipment, a
     'data.martial.unarmed.rank': jsonBuild.proficiencies.unarmed/2,
 
     
-    'data.skills.arc.rank' : jsonBuild.proficiencies.acrobatics/2,
+    'data.skills.acr.rank' : jsonBuild.proficiencies.acrobatics/2,
     'data.skills.arc.rank' : jsonBuild.proficiencies.arcana/2,
     'data.skills.ath.rank' : jsonBuild.proficiencies.athletics/2,
     'data.skills.cra.rank' : jsonBuild.proficiencies.crafting/2,
