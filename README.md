@@ -1,7 +1,9 @@
 # Foundry VTT Pathbuilder2e Import
 A module for Foundry VTT importing Pathbuilder 2e characters.
 
-This module is current in testing phase.  There may be issues!
+This module is currently in testing phase.  There may be issues!
+
+Please be aware that this module attempts to match Pathbuilder 2e feats, specials and items to Foundry items, and will not perform perfectly in all cases due to database differences.
 
 **Guide for Importing from Pathbuilder 2e**
 
