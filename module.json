@@ -5,6 +5,7 @@
   "author": "Redrazors",
   "version": "0.1.10",
   "minimumCoreVersion": "0.5.0",
+  "compatibleCoreVersion": "0.7.4",
   "scripts": [ 
         "./pathbuilder-import.js"
     ],
