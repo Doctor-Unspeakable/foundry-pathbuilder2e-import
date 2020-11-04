@@ -492,41 +492,42 @@ async function importCharacter(targetActor, jsonBuild){
             armorDetails.added=true;
             const clonedData = JSON.parse(JSON.stringify(action.data));
 
-            clonedData.data.quantity.value = armorDetails.qty;
-            clonedData.data.armorType.value = armorDetails.prof;
-            clonedData.data.potencyRune.value = armorDetails.pot.toString();
-            clonedData.data.resiliencyRune.value = armorDetails.res;
-            // this will also catch the nulls from early json data which did not have this value
-            if (armorDetails.worn){
-              clonedData.data.equipped.value = true;
-            } else {
-              clonedData.data.equipped.value = false;
+            if (notBracersOfArmor(armorDetails.name)){
+              clonedData.data.quantity.value = armorDetails.qty;
+              clonedData.data.armorType.value = armorDetails.prof;
+              clonedData.data.potencyRune.value = armorDetails.pot.toString();
+              clonedData.data.resiliencyRune.value = armorDetails.res;
+              // this will also catch the nulls from early json data which did not have this value
+              if (armorDetails.worn){
+                clonedData.data.equipped.value = true;
+              } else {
+                clonedData.data.equipped.value = false;
+              }
+  
+              if (armorDetails.runes[0]){
+                clonedData.data.propertyRune1.value=camelCase(armorDetails.runes[0]);
+              }
+              if (armorDetails.runes[1]){
+                clonedData.data.propertyRune2.value=camelCase(armorDetails.runes[1]);
+              }
+              if (armorDetails.runes[2]){
+                clonedData.data.propertyRune3.value=camelCase(armorDetails.runes[2]);
+              }
+              if (armorDetails.runes[3]){
+                clonedData.data.propertyRune4.value=camelCase(armorDetails.runes[3]);
+              }
+  
+              if (armorDetails.mat){
+                let material = armorDetails.mat.split(" (")[0];
+                clonedData.data.preciousMaterial.value = camelCase(material);
+                clonedData.data.preciousMaterialGrade.value = getMaterialGrade(armorDetails.mat);
+              }
+  
+              if (armorDetails.display){
+                clonedData.name = armorDetails.display;
+              }
             }
             
-
-
-            if (armorDetails.runes[0]){
-              clonedData.data.propertyRune1.value=camelCase(armorDetails.runes[0]);
-            }
-            if (armorDetails.runes[1]){
-              clonedData.data.propertyRune2.value=camelCase(armorDetails.runes[1]);
-            }
-            if (armorDetails.runes[2]){
-              clonedData.data.propertyRune3.value=camelCase(armorDetails.runes[2]);
-            }
-            if (armorDetails.runes[3]){
-              clonedData.data.propertyRune4.value=camelCase(armorDetails.runes[3]);
-            }
-
-            if (armorDetails.mat){
-              let material = armorDetails.mat.split(" (")[0];
-              clonedData.data.preciousMaterial.value = camelCase(material);
-              clonedData.data.preciousMaterialGrade.value = getMaterialGrade(armorDetails.mat);
-            }
-
-            if (armorDetails.display){
-              clonedData.name = armorDetails.display;
-            }
 
             allItems.push(clonedData);
 
@@ -571,6 +572,10 @@ async function importCharacter(targetActor, jsonBuild){
   addLores(targetActor, arrayLores);
  
 
+}
+
+function notBracersOfArmor(name){
+  return !name.toLowerCase().includes("bracers of armor");
 }
 
 function camelCase(str) { 
@@ -1079,5 +1084,4 @@ function checkAllFinishedAndCreate(targetActor){
     }
   }
 }
-
 
