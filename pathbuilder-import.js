@@ -335,38 +335,44 @@ for (var ref in arraySpecials){
 
   });
 
-  // old ancestry value set 'data.details.ancestry.value': jsonBuild.ancestry, 
-  // old class value set 'data.details.class.value': jsonBuild.class, 
-  //  'data.attributes.levelbonushp': jsonBuild.attributes.bonushpPerLevel, not adding this as foundry seems to be including these values automatically
+
+
+
   
-  
-  // remove old ancestry and class
-  for (var ref in targetActor.data.items) {
-    if (targetActor.data.items.hasOwnProperty(ref)) {
-      let item =targetActor.data.items[ref]; 
-            if (item.type =="ancestry" || item.type =="class"){
-                // delete old ancestry
-              await targetActor.deleteOwnedItem(item._id);
-            }
-    }         
-  }
 
   // ancestry
-  let packAncestry = await game.packs.get('pf2e.ancestries').getContent();
-  for (const item of packAncestry) {
-      if (item.data.data.slug == getSlug(jsonBuild.ancestry)){
-        await targetActor.createOwnedItem(item.data);
-      }
+  if (getExistingAncestrySlug(targetActor)!=getSlug(jsonBuild.ancestry)){
+    if (!deleteAll){
+      const items = targetActor.data.items.filter(i => i.type === "ancestry" || (i.type==="feat" && i.data.featType.value === "ancestryfeature"));
+      const deletions = items.map(i => i._id);
+      const updated = await targetActor.deleteEmbeddedEntity("OwnedItem", deletions); // Deletes multiple EmbeddedEntity objects
+    }
+    let packAncestry = await game.packs.get('pf2e.ancestries').getContent();
+    for (const item of packAncestry) {
+        if (item.data.data.slug == getSlug(jsonBuild.ancestry)){
+          await targetActor.createOwnedItem(item.data);
+        }
+    }
   }
+  
   
 
   // class
-  let packClasses = await game.packs.get('pf2e.classes').getContent();
-  for (const item of packClasses) {
-      if (item.data.data.slug == getSlug(jsonBuild.class)){
-        await targetActor.createOwnedItem(item.data);
-      }
+  if (getExistingClassSlug(targetActor)!=getSlug(jsonBuild.class)){
+    console.log("creating new class");
+    if (!deleteAll){
+      const items = targetActor.data.items.filter(i => i.type === "class" || (i.type==="feat" && i.data.featType.value === "classfeature"));
+      const deletions = items.map(i => i._id);
+      const updated = await targetActor.deleteEmbeddedEntity("OwnedItem", deletions); // Deletes multiple EmbeddedEntity objects
+    }
+    let packClasses = await game.packs.get('pf2e.classes').getContent();
+    for (const item of packClasses) {
+        if (item.data.data.slug == getSlug(jsonBuild.class)){
+          await targetActor.createOwnedItem(item.data);
+        }
+    }
   }
+  
 
 
 
@@ -629,6 +635,29 @@ for (var ref in arraySpecials){
 
 }
 
+function getExistingClassSlug(targetActor){
+  for (var ref in targetActor.data.items) {
+    if (targetActor.data.items.hasOwnProperty(ref)) {
+      let item =targetActor.data.items[ref]; 
+      if (item.type =="class"){
+        return item.data.slug;
+      }
+    }         
+  }
+  return null;
+}
+function getExistingAncestrySlug(targetActor){
+  for (var ref in targetActor.data.items) {
+    if (targetActor.data.items.hasOwnProperty(ref)) {
+      let item =targetActor.data.items[ref]; 
+      if (item.type =="ancestry"){
+        return item.data.slug;
+      }
+    }         
+  }
+  return null;
+}
+
 function notBracersOfArmor(name){
   return !name.toLowerCase().includes("bracers of armor");
 }
@@ -651,6 +680,7 @@ function getMaterialGrade(material){
 }
 
 async function addFeatItems(targetActor, arrayFeats){
+  var usedLocations =[];
   let content = await game.packs.get('pf2e.feats-srd').getContent();
   for (const action of content.filter(item => featIsRequired(item, arrayFeats))) {
     for (var ref in arrayFeats) {
@@ -670,10 +700,18 @@ async function addFeatItems(targetActor, arrayFeats){
             const clonedData = JSON.parse(JSON.stringify(action.data));
             clonedData.name = displayName;
 
-            if (pathbuilderFeatItem[2] && pathbuilderFeatItem[3]){
-              let location = getFoundryFeatLocation(pathbuilderFeatItem[2], pathbuilderFeatItem[3])
-              clonedData.data.location = location;
+            try{
+              if (pathbuilderFeatItem[2] && pathbuilderFeatItem[3]){
+                let location = getFoundryFeatLocation(pathbuilderFeatItem[2], pathbuilderFeatItem[3]);
+                if (!usedLocations.includes(location)){
+                  clonedData.data.location = location;
+                  usedLocations.push(location);
+                }                
+              }
+            } catch(err){
+              console.log(err);
             }
+            
 
             allItems.push(clonedData);
           }
