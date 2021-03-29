@@ -343,7 +343,7 @@ for (var ref in arraySpecials){
   // ancestry
   if (getExistingAncestrySlug(targetActor)!=getSlug(jsonBuild.ancestry)){
     if (!deleteAll){
-      const items = targetActor.data.items.filter(i => i.type === "ancestry" || (i.type==="feat" && i.data.featType.value === "ancestryfeature"));
+      const items = targetActor.data.items.filter(i => i.type === "ancestry");
       const deletions = items.map(i => i._id);
       const updated = await targetActor.deleteEmbeddedEntity("OwnedItem", deletions); // Deletes multiple EmbeddedEntity objects
     }
@@ -361,7 +361,7 @@ for (var ref in arraySpecials){
   if (getExistingClassSlug(targetActor)!=getSlug(jsonBuild.class)){
     console.log("creating new class");
     if (!deleteAll){
-      const items = targetActor.data.items.filter(i => i.type === "class" || (i.type==="feat" && i.data.featType.value === "classfeature"));
+      const items = targetActor.data.items.filter(i => i.type === "class");
       const deletions = items.map(i => i._id);
       const updated = await targetActor.deleteEmbeddedEntity("OwnedItem", deletions); // Deletes multiple EmbeddedEntity objects
     }
