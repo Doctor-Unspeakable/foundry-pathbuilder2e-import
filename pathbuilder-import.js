@@ -269,14 +269,14 @@ for (var ref in arraySpecials){
 
 
 
+    // 'data.details.class.value': jsonBuild.class,
+    // 'data.details.ancestry.value': jsonBuild.ancestry,
 
   targetActor.update({
     'name': jsonBuild.name, 
     'data.details.level.value': jsonBuild.level, 
     'data.details.background.value': jsonBuild.background, 
     'data.details.heritage.value': jsonBuild.heritage,
-
-
     'data.details.age.value': jsonBuild.age,
     'data.details.gender.value': jsonBuild.gender,
     'data.details.keyability.value': jsonBuild.keyability,
@@ -338,9 +338,10 @@ for (var ref in arraySpecials){
 
 
 
+
   
 
-  // ancestry
+  // // //ancestry
   if (getExistingAncestrySlug(targetActor)!=getSlug(jsonBuild.ancestry)){
     if (!deleteAll){
       const items = targetActor.data.items.filter(i => i.type === "ancestry");
@@ -350,14 +351,14 @@ for (var ref in arraySpecials){
     let packAncestry = await game.packs.get('pf2e.ancestries').getContent();
     for (const item of packAncestry) {
         if (item.data.data.slug == getSlug(jsonBuild.ancestry)){
-          await targetActor.createOwnedItem(item.data);
+          allItems.push(item.data);
         }
     }
   }
   
   
 
-  // class
+  // //class
   if (getExistingClassSlug(targetActor)!=getSlug(jsonBuild.class)){
     console.log("creating new class");
     if (!deleteAll){
@@ -368,7 +369,7 @@ for (var ref in arraySpecials){
     let packClasses = await game.packs.get('pf2e.classes').getContent();
     for (const item of packClasses) {
         if (item.data.data.slug == getSlug(jsonBuild.class)){
-          await targetActor.createOwnedItem(item.data);
+          allItems.push(item.data);
         }
     }
   }
@@ -376,15 +377,18 @@ for (var ref in arraySpecials){
 
 
 
+
   if (addFeats){
+
 
     addFeatItems(targetActor, arrayFeats);
 
     addActionItems(targetActor, arraySpecials);
 
     addAncestryFeatureItems(targetActor, arraySpecials);
-
+    
     addClassFeatureItems(targetActor, arraySpecials);
+    
 
 
   }else {
