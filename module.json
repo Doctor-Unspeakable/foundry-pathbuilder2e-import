@@ -3,7 +3,7 @@
   "title": "Pathbuilder 2e Import",
   "description": "This module adds a button to the top of player character sheets allowing them to quickly import their character from Pathbuilder 2e.",
   "author": "Redrazors",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "minimumCoreVersion": "0.5.0",
   "compatibleCoreVersion": "0.7.9",
   "scripts": [ 
@@ -13,5 +13,5 @@
   "packs": [],
   "url": "https://github.com/Doctor-Unspeakable/foundry-pathbuilder2e-import",
   "manifest": "https://raw.githubusercontent.com/Doctor-Unspeakable/foundry-pathbuilder2e-import/master/module.json",
-  "download": "https://github.com/Doctor-Unspeakable/foundry-pathbuilder2e-import/archive/17.zip"
+  "download": "https://github.com/Doctor-Unspeakable/foundry-pathbuilder2e-import/archive/18.zip"
 }
