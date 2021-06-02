@@ -2,7 +2,7 @@ Hooks.on('renderActorSheet', function(obj, html){
 
   // Only inject the link if the actor is of type "character" and the user has permission to update it
   const actor = obj.actor;
-  if (!(actor.data.type === "character" && actor.can(game.user, "update"))) return;
+  // if (!(actor.data.type === "character" && actor.can(game.user, "update"))) return;
 
   let element = html.find(".window-header .window-title");
   if (element.length != 1) return;
@@ -33,6 +33,8 @@ var jsonBuild=[];
 var addedItems=[];
 
 
+          // <input type="checkbox" id="checkBoxSpellcasters" name="checkBoxSpellcasters" checked>
+          // <label for="checkBoxSpellcasters"> Import Spellcasters? (Deletes existing)</label><br><br>
 
 
 function beginPathbuilderImport(targetActor){
@@ -51,8 +53,9 @@ function beginPathbuilderImport(targetActor){
     content: `
       
       <div>
-        <p>Step 1: Export your character from Pathbuilder 2e via the app menu</p>
-        <p>Step 2: Enter the 6 digit user ID number from the pathbuilder export dialog below</p>
+        <p>Step 1: Refresh this browser page!</p>
+        <p>Step 2: Export your character from Pathbuilder 2e via the app menu</p>
+        <p>Step 3: Enter the 6 digit user ID number from the pathbuilder export dialog below</p>
         <br>
         <p>Please note - items which cannot be matched to the Foundry database will not be imported!<p>
       <div>
@@ -64,12 +67,11 @@ function beginPathbuilderImport(targetActor){
           <label for="checkBoxEquipment"> Import Equipment?</label><br>
           <input type="checkbox" id="checkBoxMoney" name="checkBoxMoney">
           <label for="checkBoxMoney"> Import Money?</label><br><br>
-          <input type="checkbox" id="checkBoxSpellcasters" name="checkBoxSpellcasters" checked>
-          <label for="checkBoxSpellcasters"> Import Spellcasters? (Deletes existing)</label><br><br>
           <input type="checkbox" id="checkBoxDeleteAll" name="checkBoxDeleteAll">
           <label for="checkBoxDeleteAll"> Delete all existing items before import?</label><br><br>
          
       </form>
+      <p>Import of spells is temporarily disabled!</p>
       <div id="divCode">
         Enter your pathbuilder user ID number<br>
         <div id="divOuter">
@@ -142,7 +144,7 @@ function beginPathbuilderImport(targetActor){
   
          addMoney = html.find('[name="checkBoxMoney"]')[0].checked;
   
-         addSpellcasters = html.find('[name="checkBoxSpellcasters"]')[0].checked;
+        //  addSpellcasters = html.find('[name="checkBoxSpellcasters"]')[0].checked;
   
          deleteAll = html.find('[name="checkBoxDeleteAll"]')[0].checked;
   
@@ -216,21 +218,42 @@ function checkCharacterIsCorrect(targetActor,jsonBuild){
 
 
 
+function shouldBeManuallyDeleted(i){
+  // if (i.data.type=="ancestry"){
+  //   return false;
+  // }  
+  if (i.data.type=="feat"){
+    if (i.data.data.featType.value=="ancestryfeature"){
+      return false;
+    }
+  }
+  // if (i.data.type=="spell"){
+  //   return false;
+  // }
+  return true;
+}
 
 
 async function importCharacter(targetActor, jsonBuild){
 
+  
   if (deleteAll){
-    let deletions = targetActor.data.items.map(i => i._id);
-    let updated = await targetActor.deleteEmbeddedEntity("OwnedItem", deletions);
+
+    const items = targetActor.data.items.filter(i => shouldBeManuallyDeleted(i));
+    const deletions = items.map(i => i.id);
+    const updated = await targetActor.deleteEmbeddedDocuments("Item", deletions);
+
+    // let deletions = targetActor.data.items.map(i => i.id);
+    // let updated = await targetActor.deleteEmbeddedDocuments("Item", deletions);
 
 
   } else if (addMoney){
     let items = targetActor.data.items.filter(i => i.name === "Platinum Pieces" || i.name === "Gold Pieces" || i.name === "Silver Pieces" || i.name === "Copper Pieces");
-    let deletions = items.map(i => i._id);
-    let updated = await targetActor.deleteEmbeddedEntity("OwnedItem", deletions); 
+    let deletions = items.map(i => i.id);
+    let updated = await targetActor.deleteEmbeddedDocuments("Item", deletions); 
 
   }
+
 
   let arrayFeats = jsonBuild.feats;
   let arrayEquipment = jsonBuild.equipment;
@@ -342,13 +365,13 @@ for (var ref in arraySpecials){
   
 
   // // //ancestry
-  if (getExistingAncestrySlug(targetActor)!=getSlug(jsonBuild.ancestry)){
+  if (targetActor.data.data.details.ancestry!=jsonBuild.ancestry){
     if (!deleteAll){
       const items = targetActor.data.items.filter(i => i.type === "ancestry");
-      const deletions = items.map(i => i._id);
-      const updated = await targetActor.deleteEmbeddedEntity("OwnedItem", deletions); // Deletes multiple EmbeddedEntity objects
+      const deletions = items.map(i => i.id);
+      const updated = await targetActor.deleteEmbeddedDocuments("Item", deletions); // Deletes multiple EmbeddedEntity objects
     }
-    let packAncestry = await game.packs.get('pf2e.ancestries').getContent();
+    let packAncestry = await game.packs.get('pf2e.ancestries').getDocuments();
     for (const item of packAncestry) {
         if (item.data.data.slug == getSlug(jsonBuild.ancestry)){
           allItems.push(item.data);
@@ -359,14 +382,13 @@ for (var ref in arraySpecials){
   
 
   // //class
-  if (getExistingClassSlug(targetActor)!=getSlug(jsonBuild.class)){
-    console.log("creating new class");
+  if (targetActor.data.data.details.class!=jsonBuild.class){
     if (!deleteAll){
       const items = targetActor.data.items.filter(i => i.type === "class");
-      const deletions = items.map(i => i._id);
-      const updated = await targetActor.deleteEmbeddedEntity("OwnedItem", deletions); // Deletes multiple EmbeddedEntity objects
+      const deletions = items.map(i => i.id);
+      const updated = await targetActor.deleteEmbeddedDocuments("Item", deletions); // Deletes multiple EmbeddedEntity objects
     }
-    let packClasses = await game.packs.get('pf2e.classes').getContent();
+    let packClasses = await game.packs.get('pf2e.classes').getDocuments();
     for (const item of packClasses) {
         if (item.data.data.slug == getSlug(jsonBuild.class)){
           allItems.push(item.data);
@@ -380,14 +402,16 @@ for (var ref in arraySpecials){
 
   if (addFeats){
 
+    finishedAncestryFeatures=true;
+    finishedClassFeatures=true;
 
     addFeatItems(targetActor, arrayFeats);
 
     addActionItems(targetActor, arraySpecials);
 
-    addAncestryFeatureItems(targetActor, arraySpecials);
+    // addAncestryFeatureItems(targetActor, arraySpecials);
     
-    addClassFeatureItems(targetActor, arraySpecials);
+    // addClassFeatureItems(targetActor, arraySpecials);
     
 
 
@@ -403,14 +427,14 @@ for (var ref in arraySpecials){
   if (addEquipment){
 
     let pack = game.packs.get('pf2e.equipment-srd');
-    let content = await game.packs.get('pf2e.equipment-srd').getContent();
-    let backpackData = await pack.getEntry('3lgwjrFEsQVKzhh7');
+    let content = await game.packs.get('pf2e.equipment-srd').getDocuments();
+    let backpackData = await pack.getDocuments('3lgwjrFEsQVKzhh7');
     let backpackInstance = [];
 
     let arrayKit=[];
     if (hasAdventurersPack(arrayEquipment)){
       // adventurers kit hack since pathbuilder allows unexploded kits and foundry doesn't
-        backpackInstance = await targetActor.createOwnedItem(backpackData);
+        backpackInstance = await targetActor.createEmbeddedDocuments("Item", backpackData);
         arrayKit.push(["bedroll", 1]);
         arrayKit.push(["chalk", 10]);
         arrayKit.push(["flint-and-steel", 1]);
@@ -433,28 +457,28 @@ for (var ref in arraySpecials){
     let specificMasterInstance =[];
     let specificLegendaryInstance =[];
     if (specificTrained.length>0 && needsNewInstanceofItem(targetActor, 'Specific Trained' )){
-      specificTrainedInstance = await targetActor.createEmbeddedEntity('OwnedItem', {
+      specificTrainedInstance = await targetActor.createEmbeddedDocuments('Item', {
         name: 'Specific Trained',
         type: 'martial',
         data: { proficient: { value: 1 }}
       });
     }
     if (specificExpert.length>0 && needsNewInstanceofItem(targetActor, 'Specific Expert' )){
-      specificExpertInstance = await targetActor.createEmbeddedEntity('OwnedItem', {
+      specificExpertInstance = await targetActor.createEmbeddedDocuments('Item', {
         name: 'Specific Expert',
         type: 'martial',
         data: { proficient: { value: 2 }}
       });
     }
     if (specificMaster.length>0 && needsNewInstanceofItem(targetActor, 'Specific Master' )){
-      specificMasterInstance = await targetActor.createEmbeddedEntity('OwnedItem', {
+      specificMasterInstance = await targetActor.createEmbeddedDocuments('Item', {
         name: 'Specific Master',
         type: 'martial',
         data: { proficient: { value: 3 }}
       });
     }
     if (specificLegendary.length>0 && needsNewInstanceofItem(targetActor, 'Specific Legendary' )){
-      specificLegendaryInstance = await targetActor.createEmbeddedEntity('OwnedItem', {
+      specificLegendaryInstance = await targetActor.createEmbeddedDocuments('Item', {
         name: 'Specific Legendary',
         type: 'martial',
         data: { proficient: { value: 4 }}
@@ -489,7 +513,7 @@ for (var ref in arraySpecials){
             var itemAmount= arrayKit[ref][1];
             const clonedData = JSON.parse(JSON.stringify(action.data));
             clonedData.data.quantity.value = itemAmount;
-            clonedData.data.containerId.value = backpackInstance._id;
+            clonedData.data.containerId.value = backpackInstance.id;
             allItems.push(clonedData);          
           }
       }
@@ -505,13 +529,13 @@ for (var ref in arraySpecials){
 
             clonedData.data.quantity.value = weaponDetails.qty;
             if (specificTrained.includes(weaponDetails.name)){
-              clonedData.data.weaponType.value = specificTrainedInstance._id;
+              clonedData.data.weaponType.value = specificTrainedInstance.id;
             } else if (specificExpert.includes(weaponDetails.name)){
-              clonedData.data.weaponType.value = specificExpertInstance._id;
+              clonedData.data.weaponType.value = specificExpertInstance.id;
             } else if (specificMaster.includes(weaponDetails.name)){
-              clonedData.data.weaponType.value = specificMasterInstance._id;
+              clonedData.data.weaponType.value = specificMasterInstance.id;
             } else if (specificLegendary.includes(weaponDetails.name)){
-              clonedData.data.weaponType.value = specificLegendaryInstance._id;
+              clonedData.data.weaponType.value = specificLegendaryInstance.id;
             } else {
               clonedData.data.weaponType.value = weaponDetails.prof;
             }
@@ -639,17 +663,25 @@ for (var ref in arraySpecials){
 
 }
 
-function getExistingClassSlug(targetActor){
-  for (var ref in targetActor.data.items) {
-    if (targetActor.data.items.hasOwnProperty(ref)) {
-      let item =targetActor.data.items[ref]; 
-      if (item.type =="class"){
-        return item.data.slug;
-      }
-    }         
-  }
-  return null;
-}
+// function getExistingClassSlug(targetActor){
+
+//   for (const item of targetActor.data.items) {
+//     console.log(item.data.type);
+//     if (item.data.type =="class"){
+//       return item.data.slug;
+//     }
+//   }
+
+//   // for (var ref in targetActor.data.items) {
+//   //   if (targetActor.data.items.hasOwnProperty(ref)) {
+//   //     let item =targetActor.data.items[ref]; 
+//   //     if (item.type =="class"){
+//   //       return item.data.slug;
+//   //     }
+//   //   }         
+//   // }
+//   return null;
+// }
 function getExistingAncestrySlug(targetActor){
   for (var ref in targetActor.data.items) {
     if (targetActor.data.items.hasOwnProperty(ref)) {
@@ -685,7 +717,7 @@ function getMaterialGrade(material){
 
 async function addFeatItems(targetActor, arrayFeats){
   var usedLocations =[];
-  let content = await game.packs.get('pf2e.feats-srd').getContent();
+  let content = await game.packs.get('pf2e.feats-srd').getDocuments();
   for (const action of content.filter(item => featIsRequired(item, arrayFeats))) {
     for (var ref in arrayFeats) {
         if (arrayFeats.hasOwnProperty(ref)) {
@@ -734,7 +766,7 @@ function isNameMatch(pathbuilderItemName, foundryItemSlug){
 }
 async function addActionItems(targetActor, arraySpecials){
 
-  let content = await game.packs.get('pf2e.actionspf2e').getContent();
+  let content = await game.packs.get('pf2e.actionspf2e').getDocuments();
   for (const action of content.filter(item => specialIsRequired(item, arraySpecials))) {
     for (var ref in arraySpecials) {
       if (arraySpecials.hasOwnProperty(ref)) {
@@ -751,7 +783,7 @@ async function addActionItems(targetActor, arraySpecials){
 }
 async function addAncestryFeatureItems(targetActor, arraySpecials){
 
-  let content = await game.packs.get('pf2e.ancestryfeatures').getContent();
+  let content = await game.packs.get('pf2e.ancestryfeatures').getDocuments();
   for (const action of content.filter(item => specialIsRequired(item, arraySpecials))) {
     for (var ref in arraySpecials) {
       if (arraySpecials.hasOwnProperty(ref)) {
@@ -768,7 +800,7 @@ async function addAncestryFeatureItems(targetActor, arraySpecials){
 }
 async function addClassFeatureItems(targetActor, arraySpecials){
 
-  let content = await game.packs.get('pf2e.classfeatures').getContent();
+  let content = await game.packs.get('pf2e.classfeatures').getDocuments();
   for (const action of content.filter(item => specialIsRequired(item, arraySpecials))) {
     for (var ref in arraySpecials) {
       if (arraySpecials.hasOwnProperty(ref)) {
@@ -859,12 +891,11 @@ function getClassAdjustedSpecialNameLowerCase(specialName){
 }
 
 function needsNewInstanceofFeat(targetActor, itemName, itemExtra){
-  for (var ref in targetActor.data.items) {
-     if (targetActor.data.items.hasOwnProperty(ref)) {
-             var displayName = itemName;
-             if (itemExtra!=null)displayName +=" ("+itemExtra+")";
-             if (targetActor.data.items[ref].name===displayName)return false;
-     }         
+
+  for (const existingItem of targetActor.data.items) {
+    var displayName = itemName;
+      if (itemExtra!=null)displayName +=" ("+itemExtra+")";
+      if (existingItem.data.name===displayName)return false;
   }
   return true;
 }
@@ -902,9 +933,8 @@ async function setSpellcasters(targetActor, arraySpellcasters, deleteAll){
   // delete existing spellcasters and spells if not already deleted
   if (!deleteAll){
     let items = targetActor.data.items.filter(i => i.type === "spellcastingEntry" || i.type === "spell");
-    let deletions = items.map(i => i._id);
-    let updated = await targetActor.deleteEmbeddedEntity("OwnedItem", deletions); // Deletes multiple EmbeddedEntity objects
-
+    let deletions = items.map(i => i.id);
+    let updated = await targetActor.deleteEmbeddedDocuments("Item", deletions); 
 
   }
   
@@ -923,9 +953,12 @@ async function setSpellcasters(targetActor, arraySpellcasters, deleteAll){
           
         }
     }
+
+    finishedSpells=true;
+    checkAllFinishedAndCreate(targetActor);
   
    game.packs.filter(pack => pack.metadata.name === 'spells-srd').forEach(async (pack) => {
-    const content = await pack.getContent();
+    const content = await pack.getDocuments();
     for (const action of content.filter(item => spellIsRequired(item, requiredSpells))) {
       arraySpellcasters.forEach(spellCaster => {
 
@@ -940,7 +973,7 @@ async function setSpellcasters(targetActor, arraySpellcasters, deleteAll){
                     if (getSlug(spellListObject.list[ref])==action.data.data.slug){
 
                         const clonedData = JSON.parse(JSON.stringify(action.data));
-                        clonedData.data.location.value = spellCaster.instance._id;
+                        clonedData.data.location.value = spellCaster.instance.id;
                         clonedData.data.level.value = spellListObject.spellLevel;
 
                         allItems.push(clonedData);
@@ -1062,18 +1095,22 @@ async function addSpecificCasterAndSpells(targetActor, spellCaster, magicTraditi
     showUnpreparedSpells: { value: true }
   };
 
+  var fake=[];
   const data = {
     name: spellCaster.name,
     type: 'spellcastingEntry',
     data: spellcastingEntity
   };
+  fake.push(data);
 
-  let spellCasterInstance = await targetActor.createEmbeddedEntity('OwnedItem', data);
+
+  let spellCasterInstance = await targetActor.createEmbeddedDocuments('Item', fake);
   return spellCasterInstance;
 }
 
 async function addLores(targetActor, arrayLores){
 
+  const arrayLoreData = [];
   for (var ref in arrayLores) {
     if (arrayLores.hasOwnProperty(ref)) {
         let loreName = arrayLores[ref][0];
@@ -1101,8 +1138,10 @@ async function addLores(targetActor, arrayLores){
             data: loreData,
           };
   
+          arrayLoreData.push(data);
+         
 
-          targetActor.createEmbeddedEntity('OwnedItem', data);
+      
 
 
         } else {
@@ -1110,8 +1149,8 @@ async function addLores(targetActor, arrayLores){
           for (var ref in targetActor.data.items) {
             if (targetActor.data.items.hasOwnProperty(ref)) {
                 if (targetActor.data.items[ref].name===loreName){
-                  const update = {_id: targetActor.data.items[ref]._id, 'data.proficient.value': loreProf/2};
-                  targetActor.updateEmbeddedEntity("OwnedItem", update); // Updates one EmbeddedEntity
+                  const update = {id: targetActor.data.items[ref].id, 'data.proficient.value': loreProf/2};
+                  targetActor.updateEmbeddedEntity("Item", update); // Updates one EmbeddedEntity
                 }
             }         
           }
@@ -1121,6 +1160,9 @@ async function addLores(targetActor, arrayLores){
         
 
     }
+  }
+  if (arrayLoreData.length>0){
+    targetActor.createEmbeddedDocuments('Item', arrayLoreData);
   }
 }
 
@@ -1137,7 +1179,7 @@ function needsNewInstanceOfLore(targetActor, loreName){
 function checkAllFinishedAndCreate(targetActor){
 
   if (finishedFeats && finishedEquipment && finishedSpells && finishedActions && finishedAncestryFeatures && finishedClassFeatures){
-    let finished = targetActor.createOwnedItem(allItems);
+    let finished = targetActor.createEmbeddedDocuments("Item", allItems);
     if (finished){
       let notAddedCount=0;
       let warning = "<p>The following items could not be added. They may have already have been added in a previous import or cannot be matched to a foundry item. You may be able to find them with a manual search.</p><ul>";
