@@ -33,8 +33,7 @@ var jsonBuild=[];
 var addedItems=[];
 
 
-          // <input type="checkbox" id="checkBoxSpellcasters" name="checkBoxSpellcasters" checked>
-          // <label for="checkBoxSpellcasters"> Import Spellcasters? (Deletes existing)</label><br><br>
+
 
 
 function beginPathbuilderImport(targetActor){
@@ -47,6 +46,9 @@ function beginPathbuilderImport(targetActor){
   finishedEquipment=false;
   finishedSpells = false;
   allItems=[];
+
+  // <input type="checkbox" id="checkBoxSpellcasters" name="checkBoxSpellcasters" checked>
+  // <label for="checkBoxSpellcasters"> Import Spellcasters? (Deletes existing)</label><br><br>
   
   new Dialog({
     title: `Pathbuilder Import`,
@@ -58,6 +60,7 @@ function beginPathbuilderImport(targetActor){
         <p>Step 3: Enter the 6 digit user ID number from the pathbuilder export dialog below</p>
         <br>
         <p>Please note - items which cannot be matched to the Foundry database will not be imported!<p>
+        <p>Spells are not currently being imported.</p>
       <div>
       <hr/>
       <form>
@@ -68,10 +71,9 @@ function beginPathbuilderImport(targetActor){
           <input type="checkbox" id="checkBoxMoney" name="checkBoxMoney">
           <label for="checkBoxMoney"> Import Money?</label><br><br>
           <input type="checkbox" id="checkBoxDeleteAll" name="checkBoxDeleteAll">
-          <label for="checkBoxDeleteAll"> Delete all existing items before import?</label><br><br>
-         
+          <label for="checkBoxDeleteAll"> Delete all existing items before import (excluding spells)?</label><br><br>
+         o
       </form>
-      <p>Import of spells is temporarily disabled!</p>
       <div id="divCode">
         Enter your pathbuilder user ID number<br>
         <div id="divOuter">
@@ -227,9 +229,12 @@ function shouldBeManuallyDeleted(i){
       return false;
     }
   }
-  // if (i.data.type=="spell"){
-  //   return false;
-  // }
+  if (i.data.type=="spell"){
+    return false;
+  }
+  if (i.data.type=="spellcastingEntry"){
+    return false;
+  }
   return true;
 }
 
@@ -446,44 +451,45 @@ for (var ref in arraySpecials){
 
     }
 
+    // CURRENTLY DISABLED AS THE PATHFINDER MODULE NOW AUTOMATICALLY ADDS SPECIFIC WEAPON PROFICIENCIES
     // specific proficiencies
-    let specificTrained = jsonBuild.specificProficiencies.trained;
-    let specificExpert = jsonBuild.specificProficiencies.expert;
-    let specificMaster = jsonBuild.specificProficiencies.master;
-    let specificLegendary = jsonBuild.specificProficiencies.legendary;
+    // let specificTrained = jsonBuild.specificProficiencies.trained;
+    // let specificExpert = jsonBuild.specificProficiencies.expert;
+    // let specificMaster = jsonBuild.specificProficiencies.master;
+    // let specificLegendary = jsonBuild.specificProficiencies.legendary;
 
-    let specificTrainedInstance =[];
-    let specificExpertInstance =[];
-    let specificMasterInstance =[];
-    let specificLegendaryInstance =[];
-    if (specificTrained.length>0 && needsNewInstanceofItem(targetActor, 'Specific Trained' )){
-      specificTrainedInstance = await targetActor.createEmbeddedDocuments('Item', {
-        name: 'Specific Trained',
-        type: 'martial',
-        data: { proficient: { value: 1 }}
-      });
-    }
-    if (specificExpert.length>0 && needsNewInstanceofItem(targetActor, 'Specific Expert' )){
-      specificExpertInstance = await targetActor.createEmbeddedDocuments('Item', {
-        name: 'Specific Expert',
-        type: 'martial',
-        data: { proficient: { value: 2 }}
-      });
-    }
-    if (specificMaster.length>0 && needsNewInstanceofItem(targetActor, 'Specific Master' )){
-      specificMasterInstance = await targetActor.createEmbeddedDocuments('Item', {
-        name: 'Specific Master',
-        type: 'martial',
-        data: { proficient: { value: 3 }}
-      });
-    }
-    if (specificLegendary.length>0 && needsNewInstanceofItem(targetActor, 'Specific Legendary' )){
-      specificLegendaryInstance = await targetActor.createEmbeddedDocuments('Item', {
-        name: 'Specific Legendary',
-        type: 'martial',
-        data: { proficient: { value: 4 }}
-      });
-    }
+    // let specificTrainedInstance =[];
+    // let specificExpertInstance =[];
+    // let specificMasterInstance =[];
+    // let specificLegendaryInstance =[];
+    // if (specificTrained.length>0 && needsNewInstanceofItem(targetActor, 'Specific Trained' )){
+    //   specificTrainedInstance = await targetActor.createEmbeddedDocuments('Item', {
+    //     name: 'Specific Trained',
+    //     type: 'martial',
+    //     data: { proficient: { value: 1 }}
+    //   });
+    // }
+    // if (specificExpert.length>0 && needsNewInstanceofItem(targetActor, 'Specific Expert' )){
+    //   specificExpertInstance = await targetActor.createEmbeddedDocuments('Item', {
+    //     name: 'Specific Expert',
+    //     type: 'martial',
+    //     data: { proficient: { value: 2 }}
+    //   });
+    // }
+    // if (specificMaster.length>0 && needsNewInstanceofItem(targetActor, 'Specific Master' )){
+    //   specificMasterInstance = await targetActor.createEmbeddedDocuments('Item', {
+    //     name: 'Specific Master',
+    //     type: 'martial',
+    //     data: { proficient: { value: 3 }}
+    //   });
+    // }
+    // if (specificLegendary.length>0 && needsNewInstanceofItem(targetActor, 'Specific Legendary' )){
+    //   specificLegendaryInstance = await targetActor.createEmbeddedDocuments('Item', {
+    //     name: 'Specific Legendary',
+    //     type: 'martial',
+    //     data: { proficient: { value: 4 }}
+    //   });
+    // }
 
 
     for (const action of content.filter(item => equipmentIsRequired(item, arrayEquipment, arrayWeapons, arrayArmor, arrayKit, addMoney))) {
@@ -528,17 +534,18 @@ for (var ref in arraySpecials){
             const clonedData = JSON.parse(JSON.stringify(action.data));
 
             clonedData.data.quantity.value = weaponDetails.qty;
-            if (specificTrained.includes(weaponDetails.name)){
-              clonedData.data.weaponType.value = specificTrainedInstance.id;
-            } else if (specificExpert.includes(weaponDetails.name)){
-              clonedData.data.weaponType.value = specificExpertInstance.id;
-            } else if (specificMaster.includes(weaponDetails.name)){
-              clonedData.data.weaponType.value = specificMasterInstance.id;
-            } else if (specificLegendary.includes(weaponDetails.name)){
-              clonedData.data.weaponType.value = specificLegendaryInstance.id;
-            } else {
-              clonedData.data.weaponType.value = weaponDetails.prof;
-            }
+
+            // if (specificTrained.includes(weaponDetails.name)){
+            //   clonedData.data.weaponType.value = specificTrainedInstance.id;
+            // } else if (specificExpert.includes(weaponDetails.name)){
+            //   clonedData.data.weaponType.value = specificExpertInstance.id;
+            // } else if (specificMaster.includes(weaponDetails.name)){
+            //   clonedData.data.weaponType.value = specificMasterInstance.id;
+            // } else if (specificLegendary.includes(weaponDetails.name)){
+            //   clonedData.data.weaponType.value = specificLegendaryInstance.id;
+            // } else {
+            //   clonedData.data.weaponType.value = weaponDetails.prof;
+            // }
             
             clonedData.data.damage.die = weaponDetails.die;
             clonedData.data.potencyRune.value = weaponDetails.pot.toString();
@@ -930,13 +937,13 @@ function getSizeValue(size){
 async function setSpellcasters(targetActor, arraySpellcasters, deleteAll){
 
 
-  // delete existing spellcasters and spells if not already deleted
-  if (!deleteAll){
-    let items = targetActor.data.items.filter(i => i.type === "spellcastingEntry" || i.type === "spell");
-    let deletions = items.map(i => i.id);
-    let updated = await targetActor.deleteEmbeddedDocuments("Item", deletions); 
+  // // delete existing spellcasters and spells if not already deleted || i.type === "spell"
+  // if (!deleteAll){
+  //   let items = targetActor.data.items.filter(i => i.type === "spellcastingEntry");
+  //   let deletions = items.map(i => i.id);
+  //   let updated = await targetActor.deleteEmbeddedDocuments("Item", deletions); 
 
-  }
+  // }
   
    // make array of spellcaster instances. put 
    let requiredSpells=[];
@@ -944,51 +951,51 @@ async function setSpellcasters(targetActor, arraySpellcasters, deleteAll){
         if (arraySpellcasters.hasOwnProperty(ref)) {
           let spellCaster = arraySpellcasters[ref];
           spellCaster.instance = await addSpecificCasterAndSpells(targetActor, spellCaster, spellCaster.magicTradition, spellCaster.spellcastingType);
-          for (var ref in spellCaster.spells) {
-            if (spellCaster.spells.hasOwnProperty(ref)) {
-              let spellListObject = spellCaster.spells[ref];
-              requiredSpells = requiredSpells.concat(spellListObject.list);
-            }
-          }
           
+          // for (var ref in spellCaster.spells) {
+          //   if (spellCaster.spells.hasOwnProperty(ref)) {
+          //     let spellListObject = spellCaster.spells[ref];
+          //     requiredSpells = requiredSpells.concat(spellListObject.list);
+          //   }
+          // }
         }
     }
 
     finishedSpells=true;
     checkAllFinishedAndCreate(targetActor);
   
-   game.packs.filter(pack => pack.metadata.name === 'spells-srd').forEach(async (pack) => {
-    const content = await pack.getDocuments();
-    for (const action of content.filter(item => spellIsRequired(item, requiredSpells))) {
-      arraySpellcasters.forEach(spellCaster => {
+  //  game.packs.filter(pack => pack.metadata.name === 'spells-srd').forEach(async (pack) => {
+  //   const content = await pack.getDocuments();
+  //   for (const action of content.filter(item => spellIsRequired(item, requiredSpells))) {
+  //     arraySpellcasters.forEach(spellCaster => {
 
-        for (var ref in spellCaster.spells) {
-          if (spellCaster.spells.hasOwnProperty(ref)) {
+  //       for (var ref in spellCaster.spells) {
+  //         if (spellCaster.spells.hasOwnProperty(ref)) {
 
-            let spellListObject = spellCaster.spells[ref];
+  //           let spellListObject = spellCaster.spells[ref];
 
 
-            for (var ref in spellListObject.list) {
-                if (spellListObject.list.hasOwnProperty(ref)) {
-                    if (getSlug(spellListObject.list[ref])==action.data.data.slug){
+  //           for (var ref in spellListObject.list) {
+  //               if (spellListObject.list.hasOwnProperty(ref)) {
+  //                   if (getSlug(spellListObject.list[ref])==action.data.data.slug){
 
-                        const clonedData = JSON.parse(JSON.stringify(action.data));
-                        clonedData.data.location.value = spellCaster.instance.id;
-                        clonedData.data.level.value = spellListObject.spellLevel;
+  //                       const clonedData = JSON.parse(JSON.stringify(action.data));
+  //                       clonedData.data.location.value = spellCaster.instance.id;
+  //                       clonedData.data.level.value = spellListObject.spellLevel;
 
-                        allItems.push(clonedData);
+  //                       allItems.push(clonedData);
 
                         
-                    }
-                }         
-             }
-          }         
-        }
-       });
-    }
-    finishedSpells=true;
-    checkAllFinishedAndCreate(targetActor);
-  });
+  //                   }
+  //               }         
+  //            }
+  //         }         
+  //       }
+  //      });
+  //   }
+  //   finishedSpells=true;
+  //   checkAllFinishedAndCreate(targetActor);
+  // });
 
 }
 
@@ -1105,6 +1112,7 @@ async function addSpecificCasterAndSpells(targetActor, spellCaster, magicTraditi
 
 
   let spellCasterInstance = await targetActor.createEmbeddedDocuments('Item', fake);
+  console.log(spellCasterInstance);
   return spellCasterInstance;
 }
 
