@@ -72,7 +72,6 @@ function beginPathbuilderImport(targetActor){
           <label for="checkBoxMoney"> Import Money?</label><br><br>
           <input type="checkbox" id="checkBoxDeleteAll" name="checkBoxDeleteAll">
           <label for="checkBoxDeleteAll"> Delete all existing items before import (excluding spells)?</label><br><br>
-         o
       </form>
       <div id="divCode">
         Enter your pathbuilder user ID number<br>
